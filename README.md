@@ -27,6 +27,108 @@ This is particularly powerful for:
 - **Cross-platform validation** - Verify behavior across different OS windows
 - **State inspection** - Diagnose issues by examining storage and DOM structure
 
+## About This Project
+
+This plugin is based on the original [tauri-plugin-mcp](https://github.com/P3GLEG/tauri-plugin-mcp) by P3GLEG, and has been **heavily modified and improved** with:
+
+### Major Enhancements
+
+- **Console & Error Tracking**: New tools for capturing console logs and exceptions
+- **Comprehensive Documentation**:
+  - Complete Quick Start guide
+  - Tool Parameters Reference
+  - AI Agent Usage Guide with debugging workflows
+  - Detailed Development Workflow guide
+  - Common debugging patterns and best practices
+- **Enhanced Developer Experience**:
+  - Pre-commit checklist
+  - Step-by-step guide for adding new tools
+  - Code templates for Rust and TypeScript
+  - Testing strategies and examples
+- **Production-Ready**: Extensive troubleshooting guide and error handling
+- **Better Organization**: Structured documentation with clear examples
+
+### Attribution
+
+Original work: [P3GLEG/tauri-plugin-mcp](https://github.com/P3GLEG/tauri-plugin-mcp)
+License: MIT (see [LICENSE](LICENSE))
+
+We're grateful to P3GLEG for creating the foundation of this plugin. This fork aims to provide a more comprehensive, production-ready solution with extensive documentation for both AI agents and human developers.
+
+## 📚 Documentation
+
+**New to MCP?** Start with our comprehensive guides:
+
+- **[Quick Start Guide](docs/QUICK_START.md)** - Get running in 15 minutes
+- **[Integration Guide](docs/INTEGRATION_GUIDE.md)** - Complete setup and configuration
+- **[Testing Guide](docs/TESTING_GUIDE.md)** - Master AI-powered testing
+- **[Docs Overview](docs/README.md)** - Documentation hub
+
+**Below:** Quick reference for the main README. See the guides above for step-by-step instructions.
+
+## Quick Start
+
+Want to get started immediately? Here's the minimal setup:
+
+```bash
+# 1. Add to your Tauri app's Cargo.toml
+tauri-plugin-mcp = { path = "../.tauri-plugin-mcp" }
+
+# 2. Register in src-tauri/src/main.rs (debug builds only!)
+#[cfg(debug_assertions)]
+{
+    use tauri_plugin_mcp::PluginConfig;
+    builder = builder.plugin(tauri_plugin_mcp::init_with_config(
+        PluginConfig::new("YourApp".to_string())
+            .start_socket_server(true)
+            .socket_path("/tmp/tauri-mcp.sock")  // macOS/Linux
+    ));
+}
+
+# 3. Build the MCP server
+cd .tauri-plugin-mcp/mcp-server-ts
+pnpm install && pnpm build
+
+# 4. Configure your AI agent (Claude Code/Cursor/Cline)
+# Add to ~/.config/claude/claude_code_config.json:
+{
+  "mcpServers": {
+    "tauri-mcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/.tauri-plugin-mcp/mcp-server-ts/build/index.js"]
+    }
+  }
+}
+
+# 5. Start your Tauri app and test!
+pnpm run tauri dev
+```
+
+Now AI agents can debug your app! See [Getting Started](#getting-started) for detailed setup.
+
+## Available MCP Tools - Quick Reference
+
+| Tool | Purpose | Common Use Case |
+|------|---------|-----------------|
+| **take_screenshot** | Capture window or element images | Visual regression testing, bug reporting |
+| **get_dom** | Retrieve HTML structure | Debugging dynamic content, state inspection |
+| **execute_js** | Run JavaScript in webview | State inspection, API calls, framework access |
+| **get_element_position** | Find element coordinates | Preparing for mouse clicks, layout debugging |
+| **inject_console_capture** | Enable console log collection | Capture console.log/error/warn messages |
+| **get_console_logs** | Retrieve captured logs | Debugging runtime errors, log analysis |
+| **inject_error_tracker** | Enable exception tracking | Capture unhandled errors, promise rejections |
+| **get_exceptions** | Retrieve tracked errors | Understanding crash causes, error patterns |
+| **local_storage_get** | Read localStorage item | Session debugging, auth token inspection |
+| **local_storage_set** | Write localStorage item | Testing state persistence, setting up test data |
+| **local_storage_remove** | Delete localStorage item | Cleanup, testing deletion flows |
+| **local_storage_clear** | Clear all localStorage | Reset to clean state |
+| **local_storage_get_all** | Retrieve all storage | Complete state inspection |
+| **manage_window** | Control window properties | Multi-window testing, positioning, focus |
+| **health_check** | Verify plugin connectivity | Connection diagnostics, startup verification |
+| **ping** | Simple connectivity test | Basic health check |
+
+See [Features](#features) for detailed documentation of each tool.
+
 ## Architecture
 
 ```
@@ -219,6 +321,149 @@ Simple connectivity test to verify the plugin is responsive.
 - Startup verification
 - Debugging connection issues
 - Integration testing
+
+## Tool Parameters Reference
+
+Detailed parameter specifications for each MCP tool:
+
+### Screenshot Tools
+
+#### take_screenshot
+```typescript
+{
+  quality?: number;        // JPEG quality 1-100 (default: 90)
+  width?: number;         // Target width in pixels (optional)
+  height?: number;        // Target height in pixels (optional)
+  window_label?: string;  // Target window (default: main window)
+}
+```
+
+### DOM & Inspection Tools
+
+#### get_dom
+```typescript
+{
+  window_label?: string;  // Target window (default: main window)
+}
+```
+
+#### get_element_position
+```typescript
+{
+  selector: string;       // CSS selector (required)
+  window_label?: string;  // Target window (default: main window)
+}
+```
+
+#### execute_js
+```typescript
+{
+  script: string;         // JavaScript code to execute (required)
+  window_label?: string;  // Target window (default: main window)
+}
+```
+
+### Console & Error Tracking
+
+#### inject_console_capture
+```typescript
+{
+  window_label?: string;  // Target window (default: main window)
+}
+```
+
+#### get_console_logs
+```typescript
+{
+  level?: "log" | "warn" | "error" | "info" | "debug";  // Filter by level
+  since?: number;         // Unix timestamp - only logs after this time
+  limit?: number;         // Max number of logs to return
+  window_label?: string;  // Target window
+}
+```
+
+#### inject_error_tracker
+```typescript
+{
+  window_label?: string;  // Target window (default: main window)
+}
+```
+
+#### get_exceptions
+```typescript
+{
+  since?: number;         // Unix timestamp - only errors after this time
+  limit?: number;         // Max number of errors to return
+  window_label?: string;  // Target window
+}
+```
+
+### Storage Tools
+
+#### local_storage_get
+```typescript
+{
+  key: string;            // Storage key (required)
+  window_label?: string;  // Target window
+}
+```
+
+#### local_storage_set
+```typescript
+{
+  key: string;            // Storage key (required)
+  value: string;          // Value to store (required)
+  window_label?: string;  // Target window
+}
+```
+
+#### local_storage_remove
+```typescript
+{
+  key: string;            // Storage key (required)
+  window_label?: string;  // Target window
+}
+```
+
+#### local_storage_clear
+```typescript
+{
+  window_label?: string;  // Target window
+}
+```
+
+#### local_storage_get_all
+```typescript
+{
+  window_label?: string;  // Target window
+}
+```
+
+### Window Management
+
+#### manage_window
+```typescript
+{
+  action: "resize" | "move" | "focus" | "minimize" | "maximize" | "restore";
+  window_label?: string;  // Target window (default: main window)
+  x?: number;            // X position for move action
+  y?: number;            // Y position for move action
+  width?: number;        // Width for resize action
+  height?: number;       // Height for resize action
+}
+```
+
+### Diagnostics
+
+#### health_check
+```typescript
+{}  // No parameters required
+```
+
+#### ping
+```typescript
+{}  // No parameters required
+```
 
 ## Getting Started
 
@@ -806,6 +1051,394 @@ If you're still stuck after trying these solutions:
    - Full error messages and stack traces
    - Configuration files (plugin config and MCP server config)
 
+## AI Agent Usage Guide
+
+This section provides guidance for AI agents (like Claude Code, Cursor, Cline) on how to effectively use this plugin for debugging Tauri applications.
+
+### Recommended Debugging Workflow
+
+When debugging a Tauri application, follow this systematic approach:
+
+#### 1. **Verify Connectivity**
+
+Always start by verifying the plugin is accessible:
+
+```typescript
+// Step 1: Health check
+await health_check({});
+
+// Step 2: Ping test
+await ping({});
+```
+
+**What to check:**
+- Plugin is loaded and responsive
+- Socket connection is working
+- MCP server can communicate with Tauri app
+
+#### 2. **Set Up Monitoring**
+
+Before investigating issues, set up monitoring for runtime errors and logs:
+
+```typescript
+// Enable console log capture
+await inject_console_capture({});
+
+// Enable error tracking
+await inject_error_tracker({});
+```
+
+**Why this matters:**
+- Captures errors that occur during your investigation
+- Logs provide context about what the app is doing
+- Prevents missing important diagnostic information
+
+#### 3. **Understand Visual State**
+
+Take a screenshot to understand what the user is seeing:
+
+```typescript
+// Capture current visual state
+const screenshot = await take_screenshot({ quality: 80 });
+
+// Analyze the screenshot to understand:
+// - Is the UI rendered correctly?
+// - Are there visual errors?
+// - Which elements are visible?
+```
+
+**Use screenshots for:**
+- Visual regression detection
+- Confirming UI state before/after actions
+- Identifying layout issues
+- Documenting bugs
+
+#### 4. **Inspect DOM Structure**
+
+Examine the HTML structure to understand the application state:
+
+```typescript
+// Get full DOM
+const dom = await get_dom({});
+
+// Or find specific elements
+const buttonPos = await get_element_position({
+    selector: "button.submit"
+});
+```
+
+**Look for:**
+- Missing or unexpected elements
+- Incorrect attributes or classes
+- Dynamic content issues
+- Framework-specific data attributes
+
+#### 5. **Check Application State**
+
+Inspect application state using JavaScript execution:
+
+```typescript
+// Check React state (if using React)
+const state = await execute_js({
+    script: `
+        const app = document.getElementById('root');
+        const fiber = app._reactRootContainer?._internalRoot?.current;
+        // Return serializable state information
+        JSON.stringify({ /* state data */ });
+    `
+});
+
+// Check localStorage for session data
+const storage = await local_storage_get_all({});
+
+// Check specific configuration
+const config = await execute_js({
+    script: "JSON.stringify(window.__APP_CONFIG__ || {})"
+});
+```
+
+**Common state sources:**
+- Redux store: `window.store?.getState()`
+- Zustand: `window.useStore?.getState()`
+- Vue store: `window.app?.$store?.state`
+- Local/session storage
+- Global configuration objects
+
+#### 6. **Review Runtime Logs**
+
+Check console logs and errors for diagnostic information:
+
+```typescript
+// Get recent error messages
+const errors = await get_exceptions({
+    since: Date.now() - 60000,  // Last minute
+    limit: 50
+});
+
+// Get console logs
+const logs = await get_console_logs({
+    level: "error",
+    since: Date.now() - 60000
+});
+
+// Analyze patterns:
+// - Are there recurring errors?
+// - What was the sequence of events?
+// - Are there unhandled promise rejections?
+```
+
+#### 7. **Form and Test Hypotheses**
+
+Based on the information gathered, form hypotheses and test them:
+
+```typescript
+// Example: Testing if a specific function exists
+const hasFunction = await execute_js({
+    script: "typeof window.myFunction === 'function'"
+});
+
+// Example: Testing if data loaded
+const dataLoaded = await execute_js({
+    script: `
+        const data = window.myData;
+        JSON.stringify({
+            exists: !!data,
+            length: data?.length || 0,
+            isEmpty: !data || data.length === 0
+        });
+    `
+});
+
+// Example: Testing localStorage state
+const authState = await local_storage_get({ key: "auth_token" });
+```
+
+### Best Practices for AI Agents
+
+#### Do's
+
+1. **Always verify connectivity first** - Use `health_check()` or `ping()` before attempting other operations
+
+2. **Set up monitoring early** - Call `inject_console_capture()` and `inject_error_tracker()` at the start of debugging sessions
+
+3. **Take screenshots before and after actions** - Document visual changes to understand impact
+
+4. **Use execute_js for complex queries** - Batch multiple checks into a single JavaScript execution to reduce round trips
+
+5. **Check logs after each significant action** - Use `get_console_logs()` and `get_exceptions()` to catch errors immediately
+
+6. **Clean up test data** - Use `local_storage_clear()` or `local_storage_remove()` to reset state between tests
+
+7. **Be specific with selectors** - Use precise CSS selectors in `get_element_position()` to avoid ambiguity
+
+8. **Handle errors gracefully** - Wrap tool calls in try-catch and provide helpful context when operations fail
+
+#### Don'ts
+
+1. **Don't assume the plugin is always available** - Always verify connectivity, especially in new sessions
+
+2. **Don't skip visual verification** - Screenshots provide critical context that logs cannot
+
+3. **Don't execute untrusted code** - Only run JavaScript that you've verified is safe
+
+4. **Don't ignore TypeScript types** - Use the parameter types defined in the Tool Parameters Reference
+
+5. **Don't overwhelm with requests** - Batch operations when possible to reduce overhead
+
+6. **Don't forget about multi-window apps** - Use `window_label` parameter to target specific windows
+
+7. **Don't assume synchronous execution** - All operations are async; use await properly
+
+8. **Don't leave monitoring enabled in production** - Console/error tracking is for debugging only
+
+### Common Debugging Patterns
+
+#### Pattern 1: Debugging a Form Submission Issue
+
+```typescript
+// 1. Verify form is visible
+const screenshot = await take_screenshot({});
+
+// 2. Check form state
+const formData = await execute_js({
+    script: `
+        const form = document.querySelector('form');
+        const formData = new FormData(form);
+        const obj = {};
+        formData.forEach((value, key) => obj[key] = value);
+        JSON.stringify({
+            action: form.action,
+            method: form.method,
+            data: obj
+        });
+    `
+});
+
+// 3. Check for validation errors
+const logs = await get_console_logs({ level: "error" });
+
+// 4. Check network-related errors (if applicable)
+const exceptions = await get_exceptions({});
+```
+
+#### Pattern 2: Debugging State Management Issues
+
+```typescript
+// 1. Inspect current state
+const currentState = await execute_js({
+    script: "JSON.stringify(window.store?.getState() || {})"
+});
+
+// 2. Check localStorage for persisted state
+const persistedState = await local_storage_get({ key: "redux_state" });
+
+// 3. Compare expected vs actual
+// 4. Check for state update errors in logs
+const logs = await get_console_logs({ level: "warn" });
+```
+
+#### Pattern 3: Debugging Visual Rendering Issues
+
+```typescript
+// 1. Take screenshot
+const screenshot = await take_screenshot({});
+
+// 2. Get DOM to check element attributes
+const dom = await get_dom({});
+
+// 3. Check element positioning
+const position = await get_element_position({
+    selector: ".problematic-element"
+});
+
+// 4. Check computed styles
+const styles = await execute_js({
+    script: `
+        const el = document.querySelector('.problematic-element');
+        const styles = window.getComputedStyle(el);
+        JSON.stringify({
+            display: styles.display,
+            visibility: styles.visibility,
+            opacity: styles.opacity,
+            position: styles.position,
+            zIndex: styles.zIndex
+        });
+    `
+});
+```
+
+#### Pattern 4: Debugging API Integration Issues
+
+```typescript
+// 1. Check for network errors in console
+const logs = await get_console_logs({ level: "error" });
+
+// 2. Check application state for API responses
+const apiState = await execute_js({
+    script: `
+        JSON.stringify({
+            baseURL: window.API_BASE_URL,
+            lastResponse: window.__lastAPIResponse__,
+            pendingRequests: window.__pendingRequests__?.length || 0
+        });
+    `
+});
+
+// 3. Check localStorage for tokens
+const authToken = await local_storage_get({ key: "auth_token" });
+
+// 4. Verify token format and expiration
+const tokenInfo = await execute_js({
+    script: `
+        try {
+            const token = localStorage.getItem('auth_token');
+            if (!token) throw new Error('No token');
+            const parts = token.split('.');
+            const payload = JSON.parse(atob(parts[1]));
+            JSON.stringify({
+                isExpired: payload.exp * 1000 < Date.now(),
+                expiresAt: new Date(payload.exp * 1000).toISOString()
+            });
+        } catch (e) {
+            JSON.stringify({ error: e.message });
+        }
+    `
+});
+```
+
+### Error Handling for AI Agents
+
+When tool calls fail, handle errors systematically:
+
+```typescript
+try {
+    const result = await some_tool({ params });
+} catch (error) {
+    // 1. Check if it's a connectivity issue
+    try {
+        await ping({});
+    } catch (pingError) {
+        // Plugin is not accessible - inform user
+        // Suggest: Check if Tauri app is running
+        // Suggest: Verify socket configuration
+        return;
+    }
+
+    // 2. Check if it's a parameter validation issue
+    if (error.message.includes('validation')) {
+        // Review parameter types in Tool Parameters Reference
+        // Provide corrected parameters
+    }
+
+    // 3. Check if it's a window-specific issue
+    if (error.message.includes('window')) {
+        // Verify window_label is correct
+        // Check if window still exists
+    }
+
+    // 4. Provide helpful context to user
+    // Include: What you were trying to do
+    // Include: The specific error message
+    // Include: Suggested next steps
+}
+```
+
+### Performance Tips
+
+1. **Batch JavaScript execution:**
+   ```typescript
+   // Good: Single execution
+   const allData = await execute_js({
+       script: `
+           JSON.stringify({
+               title: document.title,
+               url: location.href,
+               userCount: document.querySelectorAll('.user').length,
+               isLoggedIn: !!localStorage.getItem('auth_token')
+           });
+       `
+   });
+
+   // Bad: Multiple round trips
+   const title = await execute_js({ script: "document.title" });
+   const url = await execute_js({ script: "location.href" });
+   const userCount = await execute_js({ script: "document.querySelectorAll('.user').length" });
+   ```
+
+2. **Use appropriate screenshot quality:**
+   - Use `quality: 60-70` for quick checks
+   - Use `quality: 90-100` for detailed analysis
+   - Lower quality = faster transfer, smaller size
+
+3. **Limit log retrieval:**
+   - Use `limit` parameter to avoid retrieving thousands of logs
+   - Use `since` parameter to get recent logs only
+   - Filter by `level` to focus on errors
+
+4. **Cache DOM if analyzing multiple times:**
+   - Get DOM once and analyze it multiple times in your code
+   - Only fetch again if you've made changes to the app
+
 ## Usage Examples
 
 ### Example 1: Visual Regression Testing
@@ -1143,20 +1776,318 @@ cargo test
 cd mcp-server-ts && pnpm test
 ```
 
+### Development Workflow
+
+#### 1. Setting Up Your Development Environment
+
+**Required Tools:**
+- Rust toolchain (latest stable)
+- Node.js 18+ and pnpm
+- A Tauri test application
+- MCP Inspector for testing: `npx @modelcontextprotocol/inspector`
+
+**IDE Setup (Recommended):**
+- **VS Code** with extensions:
+  - rust-analyzer
+  - Tauri
+  - ESLint
+  - Prettier
+- **IntelliJ IDEA/RustRover** with Rust and Tauri plugins
+
+#### 2. Making Changes
+
+**For Rust Changes (Plugin Core):**
+
+```bash
+# 1. Make changes in src/
+vim src/tools/my_tool.rs
+
+# 2. Run format and lint
+cargo fmt
+cargo clippy
+
+# 3. Build
+cargo build
+
+# 4. Test
+cargo test
+
+# 5. Test in real app
+cd ../your-tauri-app
+pnpm run tauri dev
+```
+
+**For TypeScript Changes (MCP Server):**
+
+```bash
+cd mcp-server-ts
+
+# 1. Make changes in src/
+vim src/tools/my_tool.ts
+
+# 2. Run format and lint
+pnpm run lint
+pnpm run format
+
+# 3. Build
+pnpm build
+
+# 4. Test
+pnpm test
+
+# 5. Test with MCP Inspector
+npx @modelcontextprotocol/inspector node build/index.js
+```
+
+#### 3. Testing Your Changes
+
+**Unit Tests:**
+```bash
+# Rust unit tests
+cargo test
+
+# TypeScript unit tests
+cd mcp-server-ts && pnpm test
+```
+
+**Integration Testing:**
+
+1. Start your Tauri test app with the plugin:
+   ```bash
+   cd your-test-app
+   pnpm run tauri dev
+   ```
+
+2. Use MCP Inspector to test tools:
+   ```bash
+   cd mcp-server-ts
+   npx @modelcontextprotocol/inspector node build/index.js
+   ```
+
+3. Or test with your AI agent (Claude Code, Cursor, Cline)
+
+**Manual Socket Testing:**
+```bash
+# Test ping command
+echo '{"action":"ping","params":{}}' | nc -U /tmp/tauri-mcp.sock
+
+# Test health check
+echo '{"action":"health_check","params":{}}' | nc -U /tmp/tauri-mcp.sock
+```
+
+#### 4. Debugging
+
+**Rust Debugging:**
+
+Enable verbose logging in your test app:
+```rust
+#[cfg(debug_assertions)]
+{
+    env_logger::init();  // Add this
+    builder = builder.plugin(tauri_plugin_mcp::init_with_config(...));
+}
+```
+
+Then run with:
+```bash
+RUST_LOG=debug pnpm run tauri dev
+```
+
+**TypeScript Debugging:**
+
+Add debug logging in `mcp-server-ts/src/client.ts`:
+```typescript
+console.error('[MCP] Sending command:', command);
+console.error('[MCP] Received response:', response);
+```
+
+Run with Node debugging:
+```bash
+node --inspect build/index.js
+```
+
+#### 5. Pre-Commit Checklist
+
+- [ ] Code formatted (`cargo fmt`, `pnpm run format`)
+- [ ] Lints pass (`cargo clippy`, `pnpm run lint`)
+- [ ] Tests pass (`cargo test`, `pnpm test`)
+- [ ] Changes tested in real Tauri app
+- [ ] Documentation updated (README, doc comments)
+- [ ] CHANGELOG.md updated (if applicable)
+
 ### Adding New Tools
 
-1. **Plan the tool**: Define what it does and why it's needed
-2. **Design the API**: Create TypeScript interfaces for parameters and results
-3. **Implement Rust handler**: Add the tool in `src/tools/`
-4. **Add TypeScript binding**: Create MCP server tool definition
-5. **Write tests**: Add unit and integration tests
-6. **Update documentation**: Document the new tool in this README
+Complete workflow for adding a new MCP tool:
+
+#### Step 1: Plan the Tool
+
+Define:
+- **Purpose**: What problem does it solve?
+- **Parameters**: What inputs does it need?
+- **Return Type**: What data does it return?
+- **Use Case**: When would AI agents use it?
+
+Example:
+```
+Tool: get_network_requests
+Purpose: Retrieve all network requests made by the app
+Parameters: { since?: timestamp, filter?: regex }
+Returns: Array of { url, method, status, headers, body, timing }
+Use Case: Debugging API integration issues, analyzing performance
+```
+
+#### Step 2: Implement Rust Handler
+
+Create `src/tools/my_tool.rs`:
+
+```rust
+use tauri::{AppHandle, Runtime};
+use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize)]
+pub struct MyToolParams {
+    pub param1: String,
+    pub optional_param: Option<i32>,
+}
+
+#[derive(Serialize)]
+pub struct MyToolResult {
+    pub data: String,
+}
+
+pub async fn my_tool<R: Runtime>(
+    app: &AppHandle<R>,
+    params: MyToolParams,
+) -> Result<MyToolResult, String> {
+    // Implementation here
+    Ok(MyToolResult {
+        data: format!("Processed: {}", params.param1),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_my_tool() {
+        // Add unit tests
+    }
+}
+```
+
+#### Step 3: Register in Router
+
+Add to `src/tools/mod.rs`:
+
+```rust
+pub mod my_tool;
+
+// In the command router match statement
+"my_tool" => {
+    let params = serde_json::from_value(command.params)?;
+    let result = my_tool::my_tool(&app, params).await?;
+    Ok(json!({ "success": true, "data": result }))
+}
+```
+
+#### Step 4: Add TypeScript Binding
+
+Create `mcp-server-ts/src/tools/my_tool.ts`:
+
+```typescript
+import { client } from './client';
+
+export const myToolDefinition = {
+    name: "my_tool",
+    description: "Clear description of what the tool does",
+    inputSchema: {
+        type: "object",
+        properties: {
+            param1: {
+                type: "string",
+                description: "Parameter description"
+            },
+            optional_param: {
+                type: "number",
+                description: "Optional parameter"
+            }
+        },
+        required: ["param1"]
+    }
+};
+
+export async function myTool(params: {
+    param1: string;
+    optional_param?: number;
+}) {
+    return await client.sendCommand("my_tool", params);
+}
+```
+
+#### Step 5: Register in MCP Server
+
+Add to `mcp-server-ts/src/tools/index.ts`:
+
+```typescript
+import { myToolDefinition, myTool } from './my_tool';
+
+// In the setup function
+server.registerTool(myToolDefinition, myTool);
+```
+
+#### Step 6: Write Tests
+
+**Rust test:**
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_my_tool_success() {
+        // Test implementation
+    }
+
+    #[tokio::test]
+    async fn test_my_tool_validation() {
+        // Test error cases
+    }
+}
+```
+
+**TypeScript test:**
+```typescript
+// mcp-server-ts/tests/my_tool.test.ts
+import { myTool } from '../src/tools/my_tool';
+
+describe('myTool', () => {
+    it('should process valid input', async () => {
+        // Test implementation
+    });
+});
+```
+
+#### Step 7: Update Documentation
+
+Add to README:
+1. Add entry in Quick Reference table
+2. Add to Tool Parameters Reference
+3. Add example usage in Usage Examples section
 
 ### Code Style
 
 - **Rust**: Follow `rustfmt` and `clippy` suggestions
+  - Run: `cargo fmt && cargo clippy`
+  - Fix all clippy warnings before committing
 - **TypeScript**: Use ESLint and Prettier configurations
+  - Run: `pnpm run lint && pnpm run format`
 - **Commits**: Use conventional commit format
+  - `feat:` for new features
+  - `fix:` for bug fixes
+  - `docs:` for documentation
+  - `refactor:` for code refactoring
+  - `test:` for adding tests
 
 ### Testing
 
@@ -1168,10 +2099,46 @@ cargo test
 cd mcp-server-ts
 pnpm test
 
-# Integration tests
+# Integration tests with MCP Inspector
+cd mcp-server-ts
+npx @modelcontextprotocol/inspector node build/index.js
+
+# Integration tests with real app
 cd examples/test-app
 pnpm run tauri dev
-# Then test with MCP Inspector
+# Then test with your AI agent
+```
+
+### Common Development Tasks
+
+**Rebuilding after changes:**
+```bash
+# Full rebuild
+pnpm run build && pnpm run build-plugin
+
+# Rust only
+cargo build
+
+# TypeScript only
+cd mcp-server-ts && pnpm build
+```
+
+**Running with verbose logging:**
+```bash
+# Tauri app with debug logs
+RUST_LOG=debug pnpm run tauri dev
+
+# MCP server with debug logs
+DEBUG=* node build/index.js
+```
+
+**Testing socket connectivity:**
+```bash
+# Check if socket exists
+ls -l /tmp/tauri-mcp.sock
+
+# Test with netcat
+echo '{"action":"ping","params":{}}' | nc -U /tmp/tauri-mcp.sock
 ```
 
 ## License
@@ -1186,8 +2153,22 @@ pnpm run tauri dev
 
 ## Resources
 
+### Documentation
+
+- **[Quick Start Guide](docs/QUICK_START.md)** - Get up and running in 15 minutes
+- **[Integration Guide](docs/INTEGRATION_GUIDE.md)** - Comprehensive setup and troubleshooting
+- **[Testing Guide](docs/TESTING_GUIDE.md)** - AI-powered testing scenarios and patterns
+- **[Documentation Hub](docs/README.md)** - Complete documentation overview
+
+### External Links
+
 - **Tauri Documentation**: https://tauri.app/v2/
 - **MCP Specification**: https://spec.modelcontextprotocol.io/
-- **Example Projects**: [Link to examples directory]
-- **Community Discord**: [Your Discord link]
-- **Issue Tracker**: [Your GitHub issues link]
+- **Original Plugin**: https://github.com/P3GLEG/tauri-plugin-mcp
+- **Claude Code**: https://claude.com/claude-code
+
+### Community
+
+- **Issue Tracker**: [GitHub Issues](https://github.com/yourusername/tauri-plugin-mcp/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/tauri-plugin-mcp/discussions)
+- **Tauri Discord**: https://discord.gg/tauri
